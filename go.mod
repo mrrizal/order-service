@@ -3,6 +3,7 @@ module mrrizal/order-service
 go 1.22.2
 
 require (
+	github.com/streadway/amqp v1.1.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0
 	go.opentelemetry.io/otel v1.26.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.26.0

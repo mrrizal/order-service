@@ -11,8 +11,16 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/streadway/amqp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
+
+const (
+	QueueName = "orders"
+	BrokerURL = "amqp://guest:guest@localhost:5672/"
+)
+
+var messageBrokerConn *amqp.Connection
 
 func newHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
@@ -26,7 +34,20 @@ func newHTTPHandler() http.Handler {
 	}
 
 	// Register handlers.
-	handleFunc("/order/", placeOrderHandler)
+	// sync
+	// orderHandler := OrderHandler{
+	// 	service: sendOrderToKitchenSyncService{},
+	// }
+
+	// async
+	messageBrokerConn, err := initRabbitMQ()
+	if err != nil {
+		panic(err)
+	}
+	orderHandler := OrderHandler{
+		service: &sendOrderToKitchenAsyncService{conn: messageBrokerConn},
+	}
+	handleFunc("/order/", orderHandler.placeOrderHandler)
 
 	// Add HTTP instrumentation for the whole server.
 	handler := otelhttp.NewHandler(mux, "/")
@@ -47,6 +68,9 @@ func run() (err error) {
 	defer func() {
 		err = errors.Join(err, otelShutdown(context.Background()))
 	}()
+
+	declareQueue()
+	defer closeRabbitMQ(messageBrokerConn)
 
 	// Start HTTP server.
 	srv := &http.Server{

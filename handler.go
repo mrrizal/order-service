@@ -12,8 +12,12 @@ var (
 	tracer = otel.Tracer("order-handler")
 )
 
-func placeOrderHandler(w http.ResponseWriter, r *http.Request) {
-	_, span := tracer.Start(r.Context(), "placeOrderHandler")
+type OrderHandler struct {
+	service sendOrderToKitchen
+}
+
+func (o OrderHandler) placeOrderHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "placeOrderHandler")
 	defer span.End()
 
 	if r.Method != http.MethodPost {
@@ -29,13 +33,12 @@ func placeOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err = publishOrderToRabbitMQ(order)
-	// if err != nil {
-	// 	http.Error(w, "Failed to publish order", http.StatusInternalServerError)
-	// 	return
-	// }
-
 	successMessage := fmt.Sprintf("Order received: %s", order.Food)
+	err = o.service.send(ctx, order)
+	if err != nil {
+		setErrorResponse(w, span, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	setSuccessResponse(w, span, successMessage, http.StatusCreated)
 	json.NewEncoder(w).Encode(order)
 }

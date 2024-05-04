@@ -78,10 +78,10 @@ func newOtelExporter() (trace.SpanExporter, error) {
 }
 
 func newTraceProvider() (*trace.TracerProvider, error) {
-	stdoutExporter, err := newStdOutExporter()
-	if err != nil {
-		return nil, err
-	}
+	// stdoutExporter, err := newStdOutExporter()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	otelExporter, err := newOtelExporter()
 	if err != nil {
@@ -102,7 +102,7 @@ func newTraceProvider() (*trace.TracerProvider, error) {
 
 	traceProvider := trace.NewTracerProvider(
 		// Default is 5s. Set to 1s for demonstrative purposes.
-		trace.WithBatcher(stdoutExporter, trace.WithBatchTimeout(time.Second)),
+		// trace.WithBatcher(stdoutExporter, trace.WithBatchTimeout(time.Second)),
 		trace.WithBatcher(otelExporter, trace.WithBatchTimeout(time.Second)),
 		trace.WithResource(r),
 	)
